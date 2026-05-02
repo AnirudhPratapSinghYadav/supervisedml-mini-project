@@ -6,6 +6,8 @@ import { ModelComparisonTable } from '../components/ModelComparisonTable';
 import { RegressionVisualization } from '../components/RegressionVisualization';
 import { MathExplanation } from '../components/MathExplanation';
 import { ModelAnalytics } from '../components/ModelAnalytics';
+import { MathsBehind } from '../components/MathsBehind';
+import { WhatIfAnalysis } from '../components/WhatIfAnalysis';
 import { runInference, checkBackendHealth, ModelResult, BackendStatus } from './dataService';
 import { generateReport } from '../lib/reportGenerator';
 
@@ -18,6 +20,8 @@ export default function Dashboard() {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [showMaths, setShowMaths] = useState(false);
+  const [currentInput, setCurrentInput] = useState<InferenceData | null>(null);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +32,7 @@ export default function Dashboard() {
   const handleEstimate = async (data: InferenceData) => {
     setIsLoading(true);
     setError(null);
+    setCurrentInput(data);
     setAiSummary(null);
     try {
       const result = await runInference(data);
@@ -67,12 +72,8 @@ export default function Dashboard() {
       }
       setAiSummary(summary);
 
-      // 2. Wait for charts to render, then collect chart DOM elements
-      await new Promise(resolve => setTimeout(resolve, 400));
-      const chartEls = Array.from(document.querySelectorAll('.chart-wrapper')) as HTMLElement[];
-
-      // 3. Generate structured PDF
-      await generateReport(active, models, summary, chartEls);
+      // 2. Generate structured PDF (text-native, no html2canvas)
+      await generateReport(active, models, summary);
     } catch (err: any) {
       console.error('Report error:', err);
       setAiSummary('[Report generation error. Charts and metrics are still valid.]');
@@ -204,17 +205,26 @@ export default function Dashboard() {
                     This value comes from the <strong>{activeModel.name}</strong> model.
                     Click different models in the comparison table (right) to switch.
                   </p>
-                  <button
-                    className="btn-primary"
-                    onClick={handleGenerateReport}
-                    disabled={isGeneratingPdf}
-                    style={{ maxWidth: '300px', margin: '0 auto' }}
-                  >
-                    {isGeneratingPdf ? 'Generating PDF + AI Summary...' : 'Generate Report (PDF)'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn-primary"
+                      onClick={handleGenerateReport}
+                      disabled={isGeneratingPdf}
+                      style={{ maxWidth: '220px', flex: '1' }}
+                    >
+                      {isGeneratingPdf ? 'Generating...' : 'Generate Report (PDF)'}
+                    </button>
+                    <button
+                      className="btn-outline"
+                      onClick={() => setShowMaths(true)}
+                      style={{ flex: '1', maxWidth: '220px' }}
+                    >
+                      Show Maths Behind
+                    </button>
+                  </div>
                   <p className="card-desc" style={{ marginTop: '0.5rem', fontSize: '0.6875rem' }}>
-                    Exports a PDF containing all charts, metrics, and an AI-generated executive summary
-                    powered by Gemini 2.5 Flash.
+                    <strong>PDF:</strong> Downloads a structured report with metrics, AI summary, and math foundations.&nbsp;
+                    <strong>Maths:</strong> Opens a detailed breakdown of how the prediction was computed.
                   </p>
                 </div>
               )}
@@ -293,7 +303,22 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ===== WHAT-IF ANALYSIS ===== */}
+        {activeModel && (
+          <WhatIfAnalysis model={activeModel} currentDelay={activeModel.predictedDelay} />
+        )}
+
       </div>
+
+      {/* ===== MATHS BEHIND MODAL (renders outside the report area) ===== */}
+      {activeModel && currentInput && (
+        <MathsBehind
+          model={activeModel}
+          inputData={currentInput}
+          isOpen={showMaths}
+          onClose={() => setShowMaths(false)}
+        />
+      )}
     </div>
   );
 }

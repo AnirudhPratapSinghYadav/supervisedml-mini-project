@@ -1,314 +1,285 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { ModelResult } from '../app/dataService';
 
 /* ===================================================================
-   PDF REPORT GENERATOR
+   PDF REPORT GENERATOR — v2 (Text-native, no html2canvas)
    
-   Builds a structured, professional PDF report with:
-     - Title page with metadata
-     - AI executive summary (from Gemini)
-     - Model comparison table (real text, not screenshot)
-     - 4 regression diagnostic charts (rendered as images)
-     - Mathematical explanation for the selected model
+   Builds a clean, structured, shareable PDF using only jsPDF text
+   rendering. No DOM screenshots — works reliably every time.
    
-   Output is typically 1-3 MB — lightweight and shareable.
+   Contents:
+     Page 1: Title, prediction, AI summary, model comparison table
+     Page 2: Mathematical foundations + interpretation
+     Page 3: Methodology notes
    =================================================================== */
 
-const COLORS = {
-  bg: [15, 17, 21] as [number, number, number],
-  surface: [26, 29, 35] as [number, number, number],
-  border: [42, 47, 56] as [number, number, number],
-  text: [230, 230, 230] as [number, number, number],
-  textMuted: [156, 163, 175] as [number, number, number],
-  accent: [76, 110, 245] as [number, number, number],
-  white: [255, 255, 255] as [number, number, number],
+const C = {
+  bg:    [15, 17, 21]       as [number, number, number],
+  surf:  [26, 29, 35]       as [number, number, number],
+  bdr:   [42, 47, 56]       as [number, number, number],
+  txt:   [230, 230, 230]    as [number, number, number],
+  muted: [156, 163, 175]    as [number, number, number],
+  acc:   [76, 110, 245]     as [number, number, number],
+  green: [34, 197, 94]      as [number, number, number],
+  amber: [245, 158, 11]     as [number, number, number],
 };
 
-const PAGE_W = 210; // A4 width mm
-const PAGE_H = 297; // A4 height mm
-const MARGIN = 15;
-const CONTENT_W = PAGE_W - MARGIN * 2;
+const PW = 210;
+const PH = 297;
+const M = 18;
+const CW = PW - M * 2;
 
-function ensureSpace(pdf: jsPDF, y: number, needed: number): number {
-  if (y + needed > PAGE_H - MARGIN) {
-    pdf.addPage();
-    drawPageBg(pdf);
-    return MARGIN + 5;
+function bg(pdf: jsPDF) {
+  pdf.setFillColor(...C.bg);
+  pdf.rect(0, 0, PW, PH, 'F');
+}
+
+function line(pdf: jsPDF, y: number) {
+  pdf.setDrawColor(...C.bdr);
+  pdf.setLineWidth(0.3);
+  pdf.line(M, y, PW - M, y);
+}
+
+function space(pdf: jsPDF, y: number, need: number): number {
+  if (y + need > PH - 15) { pdf.addPage(); bg(pdf); return M + 5; }
+  return y;
+}
+
+function heading(pdf: jsPDF, y: number, text: string): number {
+  y = space(pdf, y, 10);
+  pdf.setFont('courier', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(...C.acc);
+  pdf.text(text.toUpperCase(), M, y);
+  return y + 5;
+}
+
+function body(pdf: jsPDF, y: number, text: string, maxW = CW): number {
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...C.txt);
+  const lines = pdf.splitTextToSize(text, maxW);
+  for (const ln of lines) {
+    y = space(pdf, y, 5);
+    pdf.text(ln, M, y);
+    y += 4.2;
   }
   return y;
 }
 
-function drawPageBg(pdf: jsPDF) {
-  pdf.setFillColor(...COLORS.bg);
-  pdf.rect(0, 0, PAGE_W, PAGE_H, 'F');
-}
-
-function drawLine(pdf: jsPDF, y: number) {
-  pdf.setDrawColor(...COLORS.border);
-  pdf.setLineWidth(0.3);
-  pdf.line(MARGIN, y, PAGE_W - MARGIN, y);
+function label(pdf: jsPDF, y: number, text: string): number {
+  pdf.setFont('courier', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(...C.acc);
+  pdf.text(text.toUpperCase(), M, y);
+  return y + 4;
 }
 
 export async function generateReport(
   activeModel: ModelResult,
   allModels: ModelResult[],
   aiSummary: string,
-  chartElements: HTMLElement[]
 ): Promise<void> {
   const pdf = new jsPDF('p', 'mm', 'a4');
-  let y = MARGIN;
+  let y = M;
+  bg(pdf);
 
-  // ================================================================
-  // PAGE 1: TITLE + SUMMARY + TABLE
-  // ================================================================
-  drawPageBg(pdf);
+  // ============ PAGE 1: TITLE + RESULTS ============
 
-  // --- Title ---
+  // Title
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(22);
-  pdf.setTextColor(...COLORS.text);
-  pdf.text('Supply Chain Delay Prediction', MARGIN, y + 10);
-  y += 16;
+  pdf.setFontSize(20);
+  pdf.setTextColor(...C.txt);
+  pdf.text('Supply Chain Delay Prediction', M, y + 8);
+  y += 14;
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('Supervised Regression Analysis Report', MARGIN, y);
-  y += 5;
-  pdf.text(`Generated: ${new Date().toLocaleString()}`, MARGIN, y);
-  y += 5;
-  pdf.text(`Selected Model: ${activeModel.name}`, MARGIN, y);
-  y += 5;
-  pdf.text(`Predicted Delay: ${activeModel.predictedDelay.toFixed(1)} hours`, MARGIN, y);
-  y += 8;
-
-  drawLine(pdf, y);
-  y += 8;
-
-  // --- Prediction Highlight ---
-  pdf.setFillColor(...COLORS.surface);
-  pdf.roundedRect(MARGIN, y, CONTENT_W, 22, 2, 2, 'F');
   pdf.setFont('courier', 'normal');
-  pdf.setFontSize(10);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('PREDICTED DELAY', MARGIN + CONTENT_W / 2, y + 7, { align: 'center' });
+  pdf.setFontSize(8);
+  pdf.setTextColor(...C.muted);
+  pdf.text('Supervised Regression Analysis Report', M, y);
+  y += 4;
+  pdf.text(`Generated: ${new Date().toLocaleString()}`, M, y);
+  y += 8;
+  line(pdf, y); y += 10;
+
+  // Prediction box
+  pdf.setFillColor(...C.surf);
+  pdf.roundedRect(M, y, CW, 24, 2, 2, 'F');
+  pdf.setFont('courier', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...C.muted);
+  pdf.text('PREDICTED DELAY', M + CW / 2, y + 7, { align: 'center' });
   pdf.setFont('courier', 'bold');
-  pdf.setFontSize(24);
-  pdf.setTextColor(...COLORS.text);
-  pdf.text(`${activeModel.predictedDelay.toFixed(1)} hours`, MARGIN + CONTENT_W / 2, y + 18, { align: 'center' });
-  y += 30;
+  pdf.setFontSize(22);
+  pdf.setTextColor(...C.txt);
+  pdf.text(`${activeModel.predictedDelay.toFixed(1)} hours`, M + CW / 2, y + 19, { align: 'center' });
+  y += 32;
 
-  // --- AI Executive Summary ---
+  pdf.setFontSize(8);
+  pdf.setFont('courier', 'normal');
+  pdf.setTextColor(...C.muted);
+  pdf.text(`Model: ${activeModel.name}  |  RMSE: ${activeModel.rmse.toFixed(3)}  |  MAE: ${activeModel.mae.toFixed(3)}  |  R\u00B2: ${activeModel.r2.toFixed(3)}`, M, y);
+  y += 8;
+
+  // AI Summary
   if (aiSummary) {
-    y = ensureSpace(pdf, y, 40);
-
-    pdf.setFont('courier', 'bold');
-    pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.accent);
-    pdf.text('EXECUTIVE SUMMARY — GEMINI 2.5 FLASH', MARGIN, y);
-    y += 5;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(...COLORS.text);
-
-    const summaryLines = pdf.splitTextToSize(aiSummary, CONTENT_W);
-    for (const line of summaryLines) {
-      y = ensureSpace(pdf, y, 5);
-      pdf.text(line, MARGIN, y);
-      y += 4.5;
-    }
-    y += 5;
-    drawLine(pdf, y);
-    y += 8;
+    y = heading(pdf, y, 'Executive Summary \u2014 Gemini 2.5 Flash');
+    y = body(pdf, y, aiSummary);
+    y += 4;
+    line(pdf, y); y += 8;
   }
 
-  // --- Model Comparison Table ---
-  y = ensureSpace(pdf, y, 50);
+  // Model Comparison Table
+  y = heading(pdf, y, 'Model Comparison');
 
-  pdf.setFont('courier', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(...COLORS.accent);
-  pdf.text('MODEL COMPARISON', MARGIN, y);
-  y += 6;
-
-  // Table header
-  const colX = [MARGIN, MARGIN + 65, MARGIN + 100, MARGIN + 130, MARGIN + 155];
+  const cols = [M, M + 58, M + 90, M + 115, M + 140];
   pdf.setFont('courier', 'normal');
   pdf.setFontSize(7);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('MODEL', colX[0], y);
-  pdf.text('RMSE', colX[1], y);
-  pdf.text('MAE', colX[2], y);
-  pdf.text('R²', colX[3], y);
-  pdf.text('DELAY (h)', colX[4], y);
-  y += 2;
-  drawLine(pdf, y);
-  y += 4;
+  pdf.setTextColor(...C.muted);
+  ['MODEL', 'RMSE', 'MAE', 'R\u00B2', 'DELAY (h)'].forEach((h, i) => pdf.text(h, cols[i], y));
+  y += 2; line(pdf, y); y += 5;
 
-  // Table rows
-  const bestModel = allModels.reduce((a, b) => a.rmse < b.rmse ? a : b);
+  const best = allModels.reduce((a, b) => a.rmse < b.rmse ? a : b);
   for (const m of allModels) {
-    y = ensureSpace(pdf, y, 6);
-    const isBest = m.id === bestModel.id;
+    y = space(pdf, y, 6);
+    const isBest = m.id === best.id;
     const isActive = m.id === activeModel.id;
 
     if (isActive) {
-      pdf.setFillColor(76, 110, 245, 0.15);
-      pdf.rect(MARGIN - 1, y - 3, CONTENT_W + 2, 5.5, 'F');
+      pdf.setFillColor(76, 110, 245);
+      pdf.rect(M - 1, y - 3.5, CW + 2, 5.5, 'F');
+      pdf.setTextColor(255, 255, 255);
+    } else {
+      pdf.setTextColor(...C.txt);
     }
 
     pdf.setFont('courier', isBest ? 'bold' : 'normal');
     pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.text);
-    pdf.text(m.name + (isBest ? ' ✓' : ''), colX[0], y);
-    pdf.text(m.rmse.toFixed(3), colX[1], y);
-    pdf.text(m.mae.toFixed(3), colX[2], y);
-    pdf.text(m.r2.toFixed(3), colX[3], y);
-    pdf.text(m.predictedDelay.toFixed(1), colX[4], y);
+    pdf.text(m.name + (isBest ? ' \u2713' : ''), cols[0], y);
+    pdf.text(m.rmse.toFixed(3), cols[1], y);
+    pdf.text(m.mae.toFixed(3), cols[2], y);
+    pdf.text(m.r2.toFixed(3), cols[3], y);
+    pdf.text(m.predictedDelay.toFixed(1), cols[4], y);
     y += 6;
   }
-  y += 5;
+  y += 5; line(pdf, y); y += 8;
 
-  // ================================================================
-  // PAGE 2+: CHARTS
-  // ================================================================
-  if (chartElements.length > 0) {
-    pdf.addPage();
-    drawPageBg(pdf);
-    y = MARGIN;
+  // What the metrics mean
+  y = heading(pdf, y, 'Understanding the Metrics');
+  y = body(pdf, y, 'RMSE (Root Mean Squared Error): Average prediction error in hours. Lower means more accurate. Penalizes large errors heavily.');
+  y = body(pdf, y, 'MAE (Mean Absolute Error): Average absolute difference between predicted and actual delay. Easier to interpret \u2014 \"on average, the model is off by X hours.\"');
+  y = body(pdf, y, 'R\u00B2 (R-Squared): Proportion of variance explained. R\u00B2=1.0 means perfect predictions. R\u00B2=0.94 means the model captures 94% of the patterns in the data.');
 
-    pdf.setFont('courier', 'bold');
-    pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.accent);
-    pdf.text(`REGRESSION DIAGNOSTICS — ${activeModel.name.toUpperCase()}`, MARGIN, y);
-    y += 8;
+  // ============ PAGE 2: MATHEMATICAL FOUNDATIONS ============
+  pdf.addPage(); bg(pdf); y = M;
 
-    const chartLabels = [
-      'Actual vs Predicted — Points should cluster along the diagonal (y=x).',
-      'Residual Plot — Residuals should scatter randomly around zero.',
-      'Error Distribution — Bell-shaped curve centered at zero indicates unbiased errors.',
-      'Q-Q Plot — Points along diagonal confirm normally distributed residuals.',
-    ];
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(14);
+  pdf.setTextColor(...C.txt);
+  pdf.text('Mathematical Foundations', M, y + 5);
+  y += 12;
+  line(pdf, y); y += 8;
 
-    for (let i = 0; i < chartElements.length; i++) {
-      y = ensureSpace(pdf, y, 80);
+  const mathModels = getMathData();
+  for (const md of mathModels) {
+    y = space(pdf, y, 45);
 
-      // Chart label
-      pdf.setFont('courier', 'normal');
-      pdf.setFontSize(7);
-      pdf.setTextColor(...COLORS.textMuted);
-      pdf.text(chartLabels[i] || `Chart ${i + 1}`, MARGIN, y);
-      y += 4;
+    // Model name
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(...C.txt);
+    pdf.text(md.title, M, y);
+    y += 6;
 
-      // Render chart to canvas
-      try {
-        const canvas = await html2canvas(chartElements[i], {
-          backgroundColor: '#0F1115',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
+    y = label(pdf, y, 'Equation');
+    y = body(pdf, y, md.equation);
+    y += 1;
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG for smaller size
-        const imgW = CONTENT_W;
-        const imgH = (canvas.height * imgW) / canvas.width;
-        const clampedH = Math.min(imgH, 65); // max chart height in PDF
+    y = label(pdf, y, 'Loss Function');
+    y = body(pdf, y, md.loss);
+    y += 1;
 
-        pdf.addImage(imgData, 'JPEG', MARGIN, y, imgW, clampedH);
-        y += clampedH + 8;
-      } catch {
-        pdf.setTextColor(...COLORS.textMuted);
-        pdf.text('[Chart rendering failed]', MARGIN, y);
-        y += 8;
-      }
-    }
-  }
+    y = label(pdf, y, 'How It Works');
+    y = body(pdf, y, md.howItWorks);
+    y += 1;
 
-  // ================================================================
-  // FINAL PAGE: MATH EXPLANATION
-  // ================================================================
-  y = ensureSpace(pdf, y, 60);
-
-  pdf.setFont('courier', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(...COLORS.accent);
-  pdf.text(`MATHEMATICAL FOUNDATION — ${activeModel.name.toUpperCase()}`, MARGIN, y);
-  y += 6;
-
-  const mathData = getMathForModel(activeModel.name);
-  const mathSections = [
-    { label: 'Equation', value: mathData.equation },
-    { label: 'Loss Function', value: mathData.loss },
-    { label: 'Solution', value: mathData.solution },
-    { label: 'Interpretation', value: mathData.interpretation },
-  ];
-
-  for (const sec of mathSections) {
-    y = ensureSpace(pdf, y, 15);
-    pdf.setFont('courier', 'bold');
-    pdf.setFontSize(7);
-    pdf.setTextColor(...COLORS.accent);
-    pdf.text(sec.label.toUpperCase(), MARGIN, y);
+    y = label(pdf, y, 'Strengths & Weaknesses');
+    y = body(pdf, y, md.strengths);
     y += 4;
 
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(...COLORS.text);
-    const lines = pdf.splitTextToSize(sec.value, CONTENT_W);
-    for (const line of lines) {
-      y = ensureSpace(pdf, y, 5);
-      pdf.text(line, MARGIN, y);
-      y += 4;
-    }
-    y += 3;
+    line(pdf, y); y += 6;
   }
 
+  // ============ PAGE 3: METHODOLOGY ============
+  pdf.addPage(); bg(pdf); y = M;
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(14);
+  pdf.setTextColor(...C.txt);
+  pdf.text('Methodology & Data Pipeline', M, y + 5);
+  y += 12;
+  line(pdf, y); y += 8;
+
+  y = heading(pdf, y, 'Data Preprocessing');
+  y = body(pdf, y, '1. Categorical features (carrier, traffic level) are one-hot encoded using sklearn OneHotEncoder.');
+  y = body(pdf, y, '2. Numerical features (distance, weight, warehouse load) are standardized using StandardScaler.');
+  y = body(pdf, y, '3. Time features (hour, day of week) are extracted from timestamps and treated as numerical.');
+  y = body(pdf, y, '4. Train/test split: 80/20 with random_state=42 for reproducibility.');
+  y += 4;
+
+  y = heading(pdf, y, 'Model Training');
+  y = body(pdf, y, 'All four models are wrapped in sklearn Pipeline objects that apply preprocessing and model fitting in a single step. This prevents data leakage between train and test sets.');
+  y += 4;
+
+  y = heading(pdf, y, 'Evaluation Strategy');
+  y = body(pdf, y, 'Models are evaluated on the held-out test set (20% of data). Three metrics are computed: RMSE (penalizes large errors), MAE (interpretable average error), and R\u00B2 (variance explained). The model with the lowest RMSE is automatically selected as the best performer.');
+  y += 4;
+
+  y = heading(pdf, y, 'Prediction');
+  y = body(pdf, y, 'For a new input, the same preprocessing pipeline transforms the features, then the trained model outputs a continuous value representing estimated delay in hours. All four models run inference on every input for comparison.');
+  y += 6;
+
   // Footer
-  y = ensureSpace(pdf, y, 15);
-  drawLine(pdf, y);
-  y += 5;
+  line(pdf, y); y += 4;
   pdf.setFont('courier', 'normal');
   pdf.setFontSize(6);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('Supply Chain Delay Prediction — Supervised Regression Analysis', MARGIN, y);
-  pdf.text(`Report generated ${new Date().toISOString()}`, PAGE_W - MARGIN, y, { align: 'right' });
+  pdf.setTextColor(...C.muted);
+  pdf.text('Supply Chain Delay Prediction \u2014 Supervised Regression Analysis', M, y);
+  pdf.text(new Date().toISOString(), PW - M, y, { align: 'right' });
 
   // SAVE
   pdf.save('Logistics_Delay_Report.pdf');
 }
 
-// --- Math data lookup (same logic as MathExplanation component) ---
-function getMathForModel(name: string) {
-  if (/linear/i.test(name)) return {
-    equation: 'ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₚxₚ',
-    loss: 'J(β) = (1/n) Σᵢ (yᵢ − ŷᵢ)²',
-    solution: 'Closed-form: β = (XᵀX)⁻¹ Xᵀy — no iterations needed.',
-    interpretation: 'Assumes a linear relationship between features and delay. Fast to train but cannot capture non-linear patterns like traffic saturation thresholds.',
-  };
-  if (/ridge/i.test(name)) return {
-    equation: 'ŷ = Xβ + ε',
-    loss: 'J(β) = (1/n) Σᵢ (yᵢ − ŷᵢ)² + λ Σⱼ βⱼ²',
-    solution: 'Closed-form: β = (XᵀX + λI)⁻¹ Xᵀy. The λ penalty shrinks coefficients toward zero.',
-    interpretation: 'Addresses multicollinearity — stabilizes coefficients when distance and warehouse load are correlated. The regularization parameter λ controls the bias-variance tradeoff.',
-  };
-  if (/random\s*forest/i.test(name)) return {
-    equation: 'ŷ = (1/B) Σᵦ Tᵦ(x), b = 1...B trees',
-    loss: 'Per-node split criterion: min MSE(left) + MSE(right)',
-    solution: 'No gradient descent. Each tree built on bootstrap sample with random feature subsets. Predictions averaged across B trees.',
-    interpretation: 'Captures non-linear interactions natively. Robust to outliers. Feature importance derived from mean decrease in impurity.',
-  };
-  if (/gradient\s*boost/i.test(name)) return {
-    equation: 'Fₘ(x) = Fₘ₋₁(x) + ν · hₘ(x), m = 1...M stages',
-    loss: 'L(y, F) = (1/2)(y − F(x))² → gradient: rₘ = y − Fₘ₋₁(x)',
-    solution: 'At each stage m, fit tree hₘ to pseudo-residuals rₘ. Learning rate ν controls step size. Typical: 100-500 trees, ν = 0.1.',
-    interpretation: 'Each iteration corrects errors of the previous ensemble. Highly effective at capturing complex supply chain interactions. Controlled by early stopping or tree depth limits.',
-  };
-  return {
-    equation: 'ŷ = f(X) + ε',
-    loss: 'L(y, ŷ) = loss function',
-    solution: 'Optimization method depends on model type.',
-    interpretation: 'Select a recognized model for detailed foundations.',
-  };
+function getMathData() {
+  return [
+    {
+      title: 'Linear Regression (OLS)',
+      equation: '\u0177 = \u03B2\u2080 + \u03B2\u2081x\u2081 + \u03B2\u2082x\u2082 + ... + \u03B2\u2099x\u2099',
+      loss: 'J(\u03B2) = (1/n) \u03A3 (y\u1D62 - \u0177\u1D62)\u00B2    (Mean Squared Error)',
+      howItWorks: 'Finds the best-fit hyperplane by minimizing squared errors. Uses the Normal Equation: \u03B2 = (X\u1D40X)\u207B\u00B9X\u1D40y. This is a closed-form solution \u2014 no iterations needed. Each coefficient \u03B2 represents how much the delay changes per unit increase in that feature.',
+      strengths: 'Fast and interpretable. Weakness: assumes linear relationships. If traffic impact is non-linear (e.g., exponential congestion), this model will underfit.',
+    },
+    {
+      title: 'Ridge Regression (L2 Regularization)',
+      equation: '\u0177 = X\u03B2 + \u03B5',
+      loss: 'J(\u03B2) = (1/n) \u03A3 (y\u1D62 - \u0177\u1D62)\u00B2 + \u03BB \u03A3 \u03B2\u2C7C\u00B2',
+      howItWorks: 'Same as Linear Regression but adds a penalty term \u03BB\u03A3\u03B2\u00B2 that shrinks coefficients toward zero. This prevents any single feature from dominating the prediction. Solved via: \u03B2 = (X\u1D40X + \u03BBI)\u207B\u00B9X\u1D40y. The \u03BB parameter controls regularization strength.',
+      strengths: 'Handles multicollinearity (when distance and weight are correlated). More stable than OLS. Weakness: still linear \u2014 cannot capture interaction effects natively.',
+    },
+    {
+      title: 'Random Forest Regressor',
+      equation: '\u0177 = (1/B) \u03A3 T\u1D47(x),  b = 1...B trees',
+      loss: 'Split criterion: minimize MSE(left child) + MSE(right child) at each node',
+      howItWorks: 'Builds B decision trees (typically 100), each trained on a random bootstrap sample of the data. At each split, only a random subset of features is considered. Final prediction is the average of all trees. This decorrelation between trees reduces variance.',
+      strengths: 'Handles non-linear relationships natively. Robust to outliers. Provides feature importance scores. Weakness: less interpretable than linear models; can overfit on small datasets.',
+    },
+    {
+      title: 'Gradient Boosting Regressor',
+      equation: 'F\u2098(x) = F\u2098\u208B\u2081(x) + \u03BD \u00B7 h\u2098(x),  m = 1...M stages',
+      loss: 'L(y, F) = (1/2)(y - F(x))\u00B2.  Gradient: r\u2098 = y - F\u2098\u208B\u2081(x)',
+      howItWorks: 'Builds trees sequentially. Each new tree h\u2098 is fit to the pseudo-residuals (errors of the previous ensemble). Learning rate \u03BD controls the contribution of each tree. Typical config: 100-500 trees, \u03BD = 0.1, max_depth = 3-5.',
+      strengths: 'Usually the most accurate model for tabular data. Captures complex feature interactions. Weakness: slower to train; prone to overfitting if M is too large (controlled by early stopping).',
+    },
+  ];
 }
