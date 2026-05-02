@@ -1,0 +1,571 @@
+@import "tailwindcss";
+
+/* ===========================
+   DESIGN TOKENS
+   Strict charcoal engineering palette.
+   No neon, no glow, no gradients.
+   =========================== */
+
+:root {
+  --bg-base: #0F1115;
+  --bg-surface: #1A1D23;
+  --bg-elevated: #22252D;
+  --border: #2A2F38;
+  --border-active: #4C6EF5;
+  --text-primary: #E6E6E6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --accent: #4C6EF5;
+  --accent-hover: #3B5BDB;
+  --error: #EF4444;
+  --success: #22C55E;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ===========================
+   BASE RESET
+   =========================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===========================
+   LAYOUT
+   =========================== */
+
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+}
+
+/* ===========================
+   STORY / LANDING SECTION
+   Full-viewport visual narrative
+   =========================== */
+
+.story-section {
+  padding-bottom: 3rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.story-header {
+  margin-bottom: 2.5rem;
+}
+
+.story-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.story-header .subtitle {
+  font-size: 0.8125rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Narrative Cards Grid */
+.story-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 900px) {
+  .story-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.story-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.story-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.85) saturate(0.9);
+}
+
+.story-card-body {
+  padding: 1rem 1.25rem;
+}
+
+.story-card-body .step-label {
+  font-size: 0.625rem;
+  font-family: var(--mono);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.375rem;
+}
+
+.story-card-body h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.375rem;
+}
+
+.story-card-body p {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* Summary text below cards */
+.story-summary {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  max-width: 720px;
+}
+
+.story-summary strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Status Indicator */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.status-dot.connected {
+  background-color: var(--success);
+}
+
+.status-dot.error {
+  background-color: var(--error);
+}
+
+/* Main 3-Column Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================
+   CARDS
+   =========================== */
+
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+
+.card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ===========================
+   FORMS
+   =========================== */
+
+.form-group {
+  margin-bottom: 0.875rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  font-family: var(--mono);
+  border-radius: 2px;
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-row > div {
+  flex: 1;
+}
+
+/* ===========================
+   BUTTONS
+   =========================== */
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: var(--sans);
+  padding: 0.625rem 1rem;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  background-color: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  display: inline-block;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  padding: 0.375rem 0.75rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--accent);
+  background-color: rgba(76, 110, 245, 0.08);
+}
+
+.btn-outline:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ===========================
+   OUTPUT
+   =========================== */
+
+.output-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.output-label {
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.output-value {
+  font-size: 2rem;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+/* ===========================
+   TABLE
+   =========================== */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.625rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.data-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: var(--bg-elevated);
+}
+
+.data-table tbody tr.active {
+  background-color: rgba(76, 110, 245, 0.08);
+}
+
+.data-table tbody tr.active td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.data-table tbody tr.best td:first-child::after {
+  content: " ✓";
+  color: var(--success);
+  font-size: 0.625rem;
+}
+
+/* ===========================
+   CHARTS
+   =========================== */
+
+.chart-wrapper {
+  height: 220px;
+  margin-top: 0.5rem;
+}
+
+.chart-label {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+/* ===========================
+   MATH THEORY PANEL
+   =========================== */
+
+.math-panel {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.math-panel h3 {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.math-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.math-row .label {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+}
+
+/* ===========================
+   AI SUMMARY BOX
+   =========================== */
+
+.ai-summary {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+}
+
+.ai-summary h3 {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.ai-summary p {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===========================
+   ERROR BOX
+   =========================== */
+
+.error-box {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--error);
+  color: var(--error);
+  background-color: rgba(239, 68, 68, 0.06);
+  font-size: 0.8125rem;
+  font-family: var(--mono);
+  border-radius: 2px;
+  margin-top: 1rem;
+}
+
+/* ===========================
+   SECTION SPACING
+   =========================== */
+
+.section-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ===========================
+   DESCRIPTIONS & HELPERS
+   =========================== */
+
+.card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.card-desc strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.chart-desc {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+/* ===========================
+   DEMO MODE BANNER
+   =========================== */
+
+.demo-banner {
+  padding: 0.625rem 1rem;
+  border: 1px solid #92400e;
+  color: #fbbf24;
+  background-color: rgba(251, 191, 36, 0.06);
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  border-radius: 2px;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+/* Status dot: demo state */
+.status-dot.demo {
+  background-color: #fbbf24;
+}
+
+/* ===========================
+   MODEL ANALYTICS GRID
+   =========================== */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-card {
+  padding: 1rem;
+}
+
+.analytics-card .chart-wrapper {
+  height: 200px;
+}
