@@ -753,3 +753,50 @@ body {
   font-size: 0.6875rem;
   color: var(--accent);
 }
+.upload-requirements {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+.upload-req-intro {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.upload-req-intro strong { color: var(--text-primary); }
+.req-section {
+  margin-bottom: 0.75rem;
+}
+.req-label {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+.req-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.req-section li {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.125rem 0;
+}
+.req-section li::before {
+  content: "→ ";
+  color: var(--text-muted);
+}
+.req-section code {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--accent);
+  background: var(--bg-surface);
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+}

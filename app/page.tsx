@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [isDemo, setIsDemo] = useState(false);
   const [showMaths, setShowMaths] = useState(false);
   const [currentInput, setCurrentInput] = useState<InferenceData | null>(null);
+  const [dataSource, setDataSource] = useState<'none' | 'notebook' | 'sample' | 'api'>('none');
 
 
 
@@ -39,6 +40,7 @@ export default function Dashboard() {
       const result = await runInference(data);
       setModels(result.models);
       setIsDemo(result.isDemo);
+      setDataSource('api');
       setBackendStatus(result.isDemo ? 'demo' : 'connected');
       // Auto-select best model (lowest RMSE)
       if (result.models.length > 0) {
@@ -152,10 +154,12 @@ export default function Dashboard() {
           </span>
         </div>
 
-        <NotebookUploader onModelsLoaded={(loaded) => {
+        <NotebookUploader onModelsLoaded={(loaded, source) => {
           setModels(loaded);
-          setIsDemo(false);
-          setBackendStatus('connected');
+          setDataSource(source);
+          setIsDemo(source === 'sample');
+          setBackendStatus(source === 'notebook' ? 'connected' : 'demo');
+          setAiSummary(null);
           if (loaded.length > 0) {
             const best = loaded.reduce((a, b) => a.rmse < b.rmse ? a : b);
             setActiveModelId(best.id);
@@ -166,11 +170,21 @@ export default function Dashboard() {
       {/* ===== DASHBOARD ===== */}
       <div style={{ backgroundColor: '#0F1115', padding: '0.5rem' }}>
 
-        {/* Demo Mode Banner */}
-        {isDemo && models.length > 0 && (
+        {/* Data Source Banner */}
+        {models.length > 0 && dataSource === 'sample' && (
           <div className="demo-banner">
-            Demo mode — predictions are derived from input parameters using deterministic formulas.
-            Connect your Colab FastAPI backend for real sklearn model results.
+            Showing pre-trained sample results (4 models from our supply chain dataset).
+            Upload your own .ipynb notebook above to replace with your real model results.
+          </div>
+        )}
+        {models.length > 0 && dataSource === 'notebook' && (
+          <div className="demo-banner" style={{ color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.06)' }}>
+            Showing results from your uploaded notebook — {models.length} model(s): {models.map(m => m.name).join(', ')}
+          </div>
+        )}
+        {isDemo && models.length > 0 && dataSource === 'api' && (
+          <div className="demo-banner">
+            Demo mode — predictions derived from input parameters. Connect your Colab backend for real results.
           </div>
         )}
 
