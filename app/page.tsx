@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [showMaths, setShowMaths] = useState(false);
   const [currentInput, setCurrentInput] = useState<InferenceData | null>(null);
   const [dataSource, setDataSource] = useState<'none' | 'notebook' | 'sample' | 'api'>('none');
+  const [notebookTitle, setNotebookTitle] = useState<string>('');
 
 
 
@@ -154,9 +155,10 @@ export default function Dashboard() {
           </span>
         </div>
 
-        <NotebookUploader onModelsLoaded={(loaded, source) => {
+        <NotebookUploader onModelsLoaded={(loaded, source, title) => {
           setModels(loaded);
           setDataSource(source);
+          setNotebookTitle(title || '');
           setIsDemo(source === 'sample');
           setBackendStatus(source === 'notebook' ? 'connected' : 'demo');
           setAiSummary(null);
@@ -170,21 +172,27 @@ export default function Dashboard() {
       {/* ===== DASHBOARD ===== */}
       <div style={{ backgroundColor: '#0F1115', padding: '0.5rem' }}>
 
-        {/* Data Source Banner */}
-        {models.length > 0 && dataSource === 'sample' && (
-          <div className="demo-banner">
-            Showing pre-trained sample results (4 models from our supply chain dataset).
-            Upload your own .ipynb notebook above to replace with your real model results.
-          </div>
-        )}
-        {models.length > 0 && dataSource === 'notebook' && (
-          <div className="demo-banner" style={{ color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.06)' }}>
-            Showing results from your uploaded notebook — {models.length} model(s): {models.map(m => m.name).join(', ')}
-          </div>
-        )}
-        {isDemo && models.length > 0 && dataSource === 'api' && (
-          <div className="demo-banner">
-            Demo mode — predictions derived from input parameters. Connect your Colab backend for real results.
+        {/* Notebook Title Banner */}
+        {models.length > 0 && (
+          <div className="notebook-title-banner">
+            <div className="notebook-title-icon">{dataSource === 'notebook' ? '📗' : '📊'}</div>
+            <div>
+              <div className="notebook-title-name">{notebookTitle || 'Supply Chain Delay Prediction'}</div>
+              <div className="notebook-title-meta">
+                {dataSource === 'notebook' && (
+                  <span style={{ color: '#22C55E' }}>✓ Loaded from your notebook — {models.length} model(s): {models.map(m => m.name).join(', ')}</span>
+                )}
+                {dataSource === 'sample' && (
+                  <span>Default notebook results — Upload your own .ipynb to replace</span>
+                )}
+                {dataSource === 'api' && isDemo && (
+                  <span>Demo mode — Connect Colab backend for live predictions</span>
+                )}
+                {dataSource === 'api' && !isDemo && (
+                  <span style={{ color: '#22C55E' }}>✓ Live backend connected — {models.length} model(s)</span>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

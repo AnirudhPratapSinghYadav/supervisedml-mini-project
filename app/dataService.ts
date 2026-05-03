@@ -18,6 +18,11 @@ export interface PlotPoint {
   residual: number;
 }
 
+export interface FeatureImportance {
+  name: string;
+  importance: number;
+}
+
 export interface ModelResult {
   id: string;
   name: string;
@@ -26,7 +31,12 @@ export interface ModelResult {
   r2: number;
   predictedDelay: number;
   plotData: PlotPoint[];
-  isDemo?: boolean; // true when using fallback data
+  isDemo?: boolean;
+  featureNames?: string[];
+  featureImportance?: FeatureImportance[];
+  coefficients?: number[];
+  intercept?: number;
+  source?: 'notebook' | 'api' | 'sample';
 }
 
 export type BackendStatus = 'idle' | 'connected' | 'demo' | 'error';

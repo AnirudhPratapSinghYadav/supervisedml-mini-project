@@ -800,3 +800,33 @@ body {
   padding: 0.1rem 0.3rem;
   border-radius: 2px;
 }
+
+/* ===========================
+   NOTEBOOK TITLE BANNER
+   =========================== */
+.notebook-title-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(76,110,245,0.06), rgba(76,110,245,0.02));
+  border: 1px solid rgba(76,110,245,0.15);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+.notebook-title-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+.notebook-title-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.notebook-title-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.125rem;
+  font-family: var(--mono);
+}
