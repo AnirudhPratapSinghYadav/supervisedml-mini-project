@@ -27,13 +27,13 @@ interface Props {
  */
 export const InferenceForm = ({ onEstimate, isLoading }: Props) => {
   const [formData, setFormData] = useState<InferenceData>({
-    distance: 0,
-    carrier: '',
-    trafficLevel: '',
-    weight: 0,
-    warehouseLoad: 0,
-    hour: 0,
-    day: '',
+    distance: 450,
+    carrier: 'FedEx',
+    trafficLevel: 'Moderate',
+    weight: 12,
+    warehouseLoad: 45,
+    hour: 14,
+    day: '2', // Wednesday
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
