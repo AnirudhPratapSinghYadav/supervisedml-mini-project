@@ -648,3 +648,108 @@ body {
 .theory-label { font-size: 0.6875rem; font-family: var(--mono); color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
 .theory-block p { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.6; }
 .btn-outline.active { border-color: var(--accent); background-color: rgba(76,110,245,0.08); color: var(--accent); }
+
+/* ===========================
+   NOTEBOOK UPLOAD SECTION
+   =========================== */
+.upload-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+.upload-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+.upload-icon { font-size: 1.5rem; line-height: 1; }
+.upload-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+.upload-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.upload-btn {
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+}
+.upload-filename {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+.upload-message {
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  padding: 0.5rem 0.75rem;
+  border-radius: 2px;
+  margin-bottom: 0.75rem;
+}
+.upload-message.success {
+  color: #22C55E;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.upload-message.error {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.upload-message.parsing {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+.upload-help {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+.upload-help-title {
+  font-size: 0.6875rem;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.375rem;
+}
+.upload-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+.upload-help li {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.125rem 0;
+}
+.upload-help li::before {
+  content: "→ ";
+  color: var(--text-muted);
+}
+.upload-example {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+}
+.upload-example code {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--accent);
+}

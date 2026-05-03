@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InferenceForm, InferenceData } from '../components/InferenceForm';
 import { ModelComparisonTable } from '../components/ModelComparisonTable';
 import { RegressionVisualization } from '../components/RegressionVisualization';
@@ -8,6 +8,7 @@ import { MathExplanation } from '../components/MathExplanation';
 import { ModelAnalytics } from '../components/ModelAnalytics';
 import { MathsBehind } from '../components/MathsBehind';
 import { WhatIfAnalysis } from '../components/WhatIfAnalysis';
+import { NotebookUploader } from '../components/NotebookUploader';
 import { runInference, checkBackendHealth, ModelResult, BackendStatus } from './dataService';
 import { generateReport } from '../lib/reportGenerator';
 
@@ -23,7 +24,7 @@ export default function Dashboard() {
   const [showMaths, setShowMaths] = useState(false);
   const [currentInput, setCurrentInput] = useState<InferenceData | null>(null);
 
-  const reportRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     checkBackendHealth().then(setBackendStatus);
@@ -145,15 +146,25 @@ export default function Dashboard() {
           <span className={`status-dot ${backendStatus}`}></span>
           <span>
             {backendStatus === 'connected' && 'Backend connected — live model server'}
-            {backendStatus === 'demo' && 'Demo mode — connect Colab backend for live predictions'}
-            {backendStatus === 'error' && 'Backend unreachable — using demo fallback'}
+            {backendStatus === 'demo' && 'Demo mode — connect Colab backend or upload a notebook'}
+            {backendStatus === 'error' && 'Backend unreachable — upload a notebook or use demo'}
             {backendStatus === 'idle' && 'Checking backend connection...'}
           </span>
         </div>
+
+        <NotebookUploader onModelsLoaded={(loaded) => {
+          setModels(loaded);
+          setIsDemo(false);
+          setBackendStatus('connected');
+          if (loaded.length > 0) {
+            const best = loaded.reduce((a, b) => a.rmse < b.rmse ? a : b);
+            setActiveModelId(best.id);
+          }
+        }} />
       </section>
 
       {/* ===== DASHBOARD ===== */}
-      <div ref={reportRef} style={{ backgroundColor: '#0F1115', padding: '0.5rem' }}>
+      <div style={{ backgroundColor: '#0F1115', padding: '0.5rem' }}>
 
         {/* Demo Mode Banner */}
         {isDemo && models.length > 0 && (
