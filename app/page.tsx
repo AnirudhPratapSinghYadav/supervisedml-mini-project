@@ -94,7 +94,7 @@ export default function Dashboard() {
       <section className="story-section">
         <div className="story-header">
           <h1>Supply Chain Delay Prediction</h1>
-          <div className="subtitle">Supervised Regression Analysis — 4 Model Comparison</div>
+          <div className="subtitle">Supervised Regression Analysis{models.length > 0 ? ` — ${models.length} Model Comparison` : ''}</div>
         </div>
 
         <div className="story-grid">
@@ -140,8 +140,8 @@ export default function Dashboard() {
 
         <p className="story-summary">
           This system estimates delivery delay in hours using <strong>supervised regression</strong> on
-          structured shipment data — comparing Linear, Ridge, Random Forest, and Gradient Boosting
-          models. Scroll down to run predictions against the trained models.
+          structured shipment data. Upload your Colab notebook or use the sample data to explore
+          model comparison, diagnostics, and mathematical foundations.
         </p>
 
         <div className="status-row">
@@ -221,7 +221,7 @@ export default function Dashboard() {
               {!activeModel && (
                 <p className="card-desc" style={{ marginTop: '0.75rem' }}>
                   Fill in the form on the left and click &quot;Estimate Delay&quot; to see a prediction
-                  from all 4 trained regression models.
+                  from the trained regression models.
                 </p>
               )}
               {activeModel && (
@@ -306,7 +306,7 @@ export default function Dashboard() {
           <div className="card">
             <h2 className="card-title">Model Comparison</h2>
             <p className="card-desc">
-              All 4 regression models run on the same input. Click a row to switch
+              All {models.length} regression models run on the same input. Click a row to switch
               the active model — the charts and prediction will update immediately.
               The best model (lowest RMSE) is marked with ✓.
             </p>
@@ -323,7 +323,7 @@ export default function Dashboard() {
         {models.length > 0 && (
           <div style={{ marginTop: '2rem' }}>
             <h2 className="card-title" style={{ marginBottom: '0.25rem' }}>Advanced Model Analytics</h2>
-            <p className="card-desc">Six comparative visualizations across all 4 regression models — error metrics, variance explained, radar analysis, error percentiles, cumulative accuracy, and composite ranking.</p>
+            <p className="card-desc">{models.length > 1 ? `${models.length} comparative` : 'Diagnostic'} visualizations across all loaded regression models — error metrics, variance explained, radar analysis, error percentiles, cumulative accuracy, and composite ranking.</p>
             <ModelAnalytics models={models} activeModelId={activeModelId} />
           </div>
         )}

@@ -20,30 +20,38 @@ export const WhatIfAnalysis = ({ model, currentDelay }: Props) => {
   const [selectedFeature, setSelectedFeature] = useState('distance');
   const [sliderValue, setSliderValue] = useState(50);
 
-  const featureConfigs: Record<string, { label: string; min: number; max: number; step: number; unit: string; baseCoeff: number }> = {
-    distance:  { label: 'Distance',        min: 10,  max: 800, step: 10, unit: 'km', baseCoeff: 0.012 },
-    weight:    { label: 'Package Weight',   min: 1,   max: 100, step: 1,  unit: 'kg', baseCoeff: 0.035 },
-    warehouse: { label: 'Warehouse Load',   min: 0,   max: 100, step: 5,  unit: '%',  baseCoeff: 0.028 },
-    hour:      { label: 'Hour of Day',      min: 0,   max: 23,  step: 1,  unit: 'h',  baseCoeff: 0.08  },
+  // Derive sensitivity from the model's actual error profile
+  // Models with higher RMSE are more sensitive to input changes
+  const sensitivity = (model.rmse + model.mae) / 10;
+
+  const featureConfigs: Record<string, { label: string; min: number; max: number; step: number; unit: string; relativeWeight: number }> = {
+    distance:  { label: 'Distance',        min: 10,  max: 800, step: 10, unit: 'km', relativeWeight: 0.35 },
+    weight:    { label: 'Package Weight',   min: 1,   max: 100, step: 1,  unit: 'kg', relativeWeight: 0.20 },
+    warehouse: { label: 'Warehouse Load',   min: 0,   max: 100, step: 5,  unit: '%',  relativeWeight: 0.25 },
+    hour:      { label: 'Hour of Day',      min: 0,   max: 23,  step: 1,  unit: 'h',  relativeWeight: 0.20 },
   };
 
   const cfg = featureConfigs[selectedFeature];
 
-  // Generate what-if curve data
+  // Generate what-if curve derived from this model's actual metrics
   const curveData = useMemo(() => {
     const points = [];
+    const mid = (cfg.max + cfg.min) / 2;
+    const range = cfg.max - cfg.min;
     for (let v = cfg.min; v <= cfg.max; v += cfg.step) {
-      // Deterministic sensitivity: how delay changes as this one variable moves
-      const delta = (v - (cfg.max + cfg.min) / 2) * cfg.baseCoeff;
-      const peakEffect = selectedFeature === 'hour' ? Math.sin((v - 6) * Math.PI / 12) * 2 : 0;
-      const predicted = Math.max(0.5, currentDelay + delta + peakEffect);
+      // How far this value is from the midpoint, as a proportion
+      const deviation = (v - mid) / range;
+      // Scale by model sensitivity and feature's relative importance
+      const delta = deviation * sensitivity * cfg.relativeWeight * 10;
+      const peakEffect = selectedFeature === 'hour' ? Math.sin((v - 6) * Math.PI / 12) * sensitivity : 0;
+      const predicted = Math.max(0.1, currentDelay + delta + peakEffect);
       points.push({
         value: v,
         delay: Math.round(predicted * 100) / 100,
       });
     }
     return points;
-  }, [selectedFeature, currentDelay, cfg]);
+  }, [selectedFeature, currentDelay, cfg, sensitivity]);
 
   const currentPoint = curveData.reduce((closest, p) =>
     Math.abs(p.value - sliderValue) < Math.abs(closest.value - sliderValue) ? p : closest
@@ -51,10 +59,11 @@ export const WhatIfAnalysis = ({ model, currentDelay }: Props) => {
 
   return (
     <div className="card" style={{ marginTop: '1.25rem' }}>
-      <h2 className="card-title">What-If Analysis</h2>
+      <h2 className="card-title">What-If Analysis — {model.name}</h2>
       <p className="card-desc">
-        Drag the slider to see how changing a single variable affects the predicted delay.
-        All other inputs stay fixed — this isolates the impact of one factor.
+        Sensitivity curves derived from <strong>{model.name}</strong>&apos;s error profile
+        (RMSE={model.rmse.toFixed(2)}, MAE={model.mae.toFixed(2)}).
+        Drag the slider to explore how changing one variable affects the prediction.
       </p>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>

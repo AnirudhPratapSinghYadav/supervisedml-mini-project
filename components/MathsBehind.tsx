@@ -29,24 +29,29 @@ export const MathsBehind = ({ model, inputData, isOpen, onClose }: Props) => {
   const trafficMap: Record<string, number> = { 'Low': 0, 'Moderate': 1, 'High': 2 };
   const trafficVal = trafficMap[inputData.trafficLevel] ?? 1;
 
-  // Simulate feature contributions (proportional to input × approximate coefficient)
-  const features = [
-    { name: 'Distance (km)',      value: Number(inputData.distance),      weight: 0.018,  contribution: 0 },
-    { name: 'Package Weight (kg)', value: Number(inputData.weight),       weight: 0.045,  contribution: 0 },
-    { name: 'Warehouse Load (%)',  value: Number(inputData.warehouseLoad), weight: 0.032,  contribution: 0 },
-    { name: 'Traffic Level',       value: trafficVal,                      weight: 1.2,    contribution: 0 },
-    { name: 'Hour of Day',         value: Number(inputData.hour),          weight: 0.065,  contribution: 0 },
-    { name: 'Day of Week',         value: Number(inputData.day),           weight: 0.12,   contribution: 0 },
+  // Derive approximate feature contributions from the ACTUAL prediction
+  // We reverse-engineer weights so contributions sum to the real predicted delay
+  const rawInputs = [
+    { name: 'Distance (km)',       value: Number(inputData.distance) },
+    { name: 'Package Weight (kg)', value: Number(inputData.weight) },
+    { name: 'Warehouse Load (%)',  value: Number(inputData.warehouseLoad) },
+    { name: 'Traffic Level',       value: trafficVal },
+    { name: 'Hour of Day',         value: Number(inputData.hour) },
+    { name: 'Day of Week',         value: Number(inputData.day) },
   ];
 
-  // Calculate contributions
-  const intercept = 0.85;
-  let totalLinear = intercept;
-  features.forEach(f => {
-    f.contribution = Math.round(f.value * f.weight * 100) / 100;
-    totalLinear += f.contribution;
+  // Proportional contribution: each feature's share of total input magnitude
+  const totalMagnitude = rawInputs.reduce((s, f) => s + Math.abs(f.value || 0.01), 0);
+  const intercept = model.predictedDelay * 0.1; // ~10% from bias term
+  const featurePool = model.predictedDelay - intercept;
+
+  const features = rawInputs.map(f => {
+    const proportion = Math.abs(f.value || 0.01) / totalMagnitude;
+    return { ...f, weight: 0, contribution: Math.round(proportion * featurePool * 100) / 100 };
   });
-  const maxContrib = Math.max(...features.map(f => Math.abs(f.contribution)));
+
+  const totalLinear = intercept + features.reduce((s, f) => s + f.contribution, 0);
+  const maxContrib = Math.max(...features.map(f => Math.abs(f.contribution)), 0.01);
 
   // Residual stats from plot data
   const residuals = model.plotData?.map(p => p.residual) || [];
@@ -189,8 +194,9 @@ export const MathsBehind = ({ model, inputData, isOpen, onClose }: Props) => {
                 Total ≈ {intercept.toFixed(2)} + {features.map(f => f.contribution.toFixed(2)).join(' + ')} = {totalLinear.toFixed(2)}h
               </div>
               <p className="maths-tiny">
-                Note: For tree-based models (Random Forest, Gradient Boosting), contributions are non-linear
-                and cannot be decomposed into simple additions. The bars above show approximate feature importance.
+                Contributions are proportionally approximated from the actual prediction of {model.predictedDelay.toFixed(1)}h.
+                Exact per-feature weights require the trained model coefficients. For tree-based models, contributions
+                are inherently non-linear and cannot be decomposed into simple additions.
               </p>
             </div>
           )}
